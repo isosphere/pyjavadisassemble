@@ -1,0 +1,6 @@
+The purpose of this project is to create a Python application that will
+take an arbitrary Java .class file and output the Java bytecode 
+corresponding to the methods that make up the .class file.
+
+This is not a "decompiler" that generates Java source code. Those exist
+and are pretty buggy. I wanted something more reliable.
