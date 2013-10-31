@@ -1,3 +1,5 @@
+# The contents of this file are directly taken from http://en.wikipedia.org/wiki/Java_bytecode_instruction_listings, available under a creative commons license
+# Mnemonic, Opcode (in hex), Other bytes, Stack [before] -> [after], Description
 aaload,32,,"arrayref, index ? value",load onto the stack a reference from an array
 aastore,53,,"arrayref, index, value ?",store into a reference in an array
 aconst_null,1,,? null,push a null reference onto the stack

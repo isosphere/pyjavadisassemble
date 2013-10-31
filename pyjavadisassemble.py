@@ -12,6 +12,7 @@ csvfile = open('opcodes.csv', 'r')
 
 with csvfile:
     opcoderef = csv.reader(csvfile, delimiter=',', quotechar='"')
+    opcoderef.next() # skip copyright notice
     opcoderef.next() # skip header
     for row in opcoderef:
         (mnemonic, opcode, arguments, stack, description) = row
