@@ -32,15 +32,16 @@ def disassemble(bytecode):
         opcode = binascii.hexlify(bytecode[index])
         name = opcodes[opcode]['name']
         arguments = len(opcodes[opcode]['arguments'])
+        opcode_location = index
 
         if arguments == 0:
-            print "[0x%02x] %s %s" % (index, opcode, name)
+            print "[0x%02x] %s %s" % (opcode_location, opcode, name)
         else:
             argument_bytes = []
             for i in range(0, arguments):
                 index += 1
                 argument_bytes.append(binascii.hexlify(bytecode[index]))
-            print "[0x%02x] %s %s | %s %s" % (index, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
+            print "[0x%02x] %s %s | %s %s" % (opcode_location, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
 
         index += 1
 
