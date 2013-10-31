@@ -39,14 +39,12 @@ def disassemble(bytecode, address):
         opcode_location = address + index
 
         if arguments == 0:
-            #print "[0x%04x] %s %s" % (opcode_location, opcode, name)
             table.add_row(["[0x%04x]" % opcode_location, opcode, "", name, description])
         else:
             argument_bytes = []
             for i in range(0, arguments):
                 index += 1
                 argument_bytes.append(binascii.hexlify(bytecode[index]))
-            #print "[0x%04x] %s %s | %s %s" % (opcode_location, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
             table.add_row(["[0x%04x]" % opcode_location, opcode, " ".join(argument_bytes), name, description])
 
         index += 1
@@ -119,7 +117,7 @@ print "We have %d entries to extract from the constant_pool table (minus one)" %
 
 pool_entries_processed = 0
 
-constant_pool.append("Null entry to harmonize our index with Java class index convention.")
+constant_pool.append("Unused entry to harmonize our index with Java class index convention.")
 
 while pool_entries_processed < constant_pool_count - 1:
     tag = GetBytes('B')
@@ -144,31 +142,30 @@ class_access_flags = GetBytes('>H')
 print "Access flags: %04X" % class_access_flags
 
 this_class = GetBytes('>H')
-print "This class is '%s'" % Utf8Dereference(this_class)
-
 super_class = GetBytes('>H')
-print "This class has a superclass '%s'" % Utf8Dereference(super_class)
-#    print "This class has a super class represented by index %d in the pool." % super_class
-#    print constant_pool[constant_pool[super_class][1]][2]
+print "This class is '%s' (%s)" % (Utf8Dereference(this_class), Utf8Dereference(super_class))
 
 interfaces_count = GetBytes('>H')
-print "Direct superinterfaces of this class: %d" % interfaces_count
+print "Direct superinterfaces of this class:" 
 
 counted_interfaces = 0
 while counted_interfaces < interfaces_count:
-    GetBytes('>H')
+    interface = GetBytes('>H')
+    print " #%d: %s" % (counted_interfaces+1, Utf8Dereference(interface))
     counted_interfaces += 1
 
 fields_count = GetBytes('>H')
-print "There are %d fields." % fields_count
+print "Class fields:" 
 
 counted_fields = 0
 while counted_fields < fields_count:
     access_flags = GetBytes('>H')
     name_index = GetBytes('>H')
+    name_string = Utf8Dereference(name_index)
     descriptor_index = GetBytes('>H')
     attributes_count = GetBytes('>H')
-    
+
+    print " #%d: %s (%d attributes)" % (counted_fields+1, name_string, attributes_count)
     counted_attributes = 0
     while counted_attributes < attributes_count:
         attribute_name_index = GetBytes('>H')
@@ -180,6 +177,7 @@ while counted_fields < fields_count:
 
     counted_fields += 1
 
+exit() 
 methods_count = GetBytes('>H')
 print "There are %d methods." % methods_count
 
