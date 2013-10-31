@@ -63,110 +63,118 @@ tag_structure = {
 }
 
 constant_pool = []
+classfile = open('NLicenseManager.class', 'rb')
 
-with open('NLicenseManager.class', 'rb') as classfile:
-    file_address = 0
-    magic = classfile.read(4)
-    if magic != chr(0xCA) + chr(0xFE) + chr(0xBA) + chr(0xBE):
-        print "This is not a class file. Exiting."
-        exit()
+def Utf8Dereference(index):
+    # Not a string, but a reference to one
+    if len(constant_pool[index]) < 3:
+        return constant_pool[constant_pool[index][1]][2]
+    # A direct string
+    else:
+        return constant_pool[index][2]
 
-    print "This is a class file."
-    minor_version = struct.unpack('>H',classfile.read(struct.calcsize('>H')))[0]
-    major_version = struct.unpack('>H',classfile.read(struct.calcsize('>H')))[0]
+def GetBytes(data_format):
+    return struct.unpack(data_format, classfile.read(struct.calcsize(data_format)))[0]
 
-    # The number of entries in the constant_pool plus one
-    constant_pool_count = struct.unpack('>H',classfile.read(struct.calcsize('>H')))[0]
-    
-    print "Version: %d.%d" % (major_version, minor_version)
-    print "We have %d entries to extract from the constant_pool table (minus one)" % constant_pool_count
+magic = classfile.read(4)
+if magic != chr(0xCA) + chr(0xFE) + chr(0xBA) + chr(0xBE):
+    print "This is not a class file. Exiting."
+    exit()
 
-    pool_entries_processed = 0
+print "This is a class file."
+minor_version = GetBytes('>H')
+major_version = GetBytes('>H')
 
-    constant_pool.append("Null entry to harmonize our index with Java class index convention.")
+# The number of entries in the constant_pool plus one
+constant_pool_count = GetBytes('>H')
 
-    while pool_entries_processed < constant_pool_count - 1:
-        tag = struct.unpack('B', classfile.read(1))[0]
-        entry = [tag]
+print "Version: %d.%d" % (major_version, minor_version)
+print "We have %d entries to extract from the constant_pool table (minus one)" % constant_pool_count
 
-        if tag == 1: # Utf8, contains variable-length strings
-            length = struct.unpack('>H', classfile.read(struct.calcsize('>H')))[0]
-            string = classfile.read(length)
+pool_entries_processed = 0
 
-            entry.append(length)
-            entry.append(string)
+constant_pool.append("Null entry to harmonize our index with Java class index convention.")
 
-        else:
-            for packet in tag_structure[constant_pool_tag[tag]]:
-                size = struct.calcsize(packet)
-                data = struct.unpack(packet, classfile.read(size))
+while pool_entries_processed < constant_pool_count - 1:
+    tag = GetBytes('B')
+    entry = [tag]
 
-                entry.extend(data)
+    if tag == 1: # Utf8, contains variable-length strings
+        length = GetBytes('>H')
+        string = classfile.read(length)
 
-        constant_pool.append(entry)
-        pool_entries_processed += 1
+        entry.append(length)
+        entry.append(string)
 
-    class_access_flags = struct.unpack('>H', classfile.read(2))[0]
-    print "Access flags: %x" % class_access_flags
+    else:
+        for packet in tag_structure[constant_pool_tag[tag]]:
+            data = GetBytes(packet)
+            entry.append(data)
 
-    this_class = struct.unpack('>H', classfile.read(2))[0]
-    print "This class is '%s'" % constant_pool[constant_pool[this_class][1]][2]
+    constant_pool.append(entry)
+    pool_entries_processed += 1
 
-    super_class = struct.unpack('>H', classfile.read(2))[0]
-    print "This class has a superclass '%s'" % constant_pool[constant_pool[super_class][1]][2]
+class_access_flags = GetBytes('>H')
+print "Access flags: %04X" % class_access_flags
+
+this_class = GetBytes('>H')
+print "This class is '%s'" % Utf8Dereference(this_class)
+
+super_class = GetBytes('>H')
+print "This class has a superclass '%s'" % Utf8Dereference(super_class)
 #    print "This class has a super class represented by index %d in the pool." % super_class
 #    print constant_pool[constant_pool[super_class][1]][2]
 
-    interfaces_count = struct.unpack('>H', classfile.read(2))[0]
-    print "Direct superinterfaces of this class: %d" % interfaces_count
+interfaces_count = GetBytes('>H')
+print "Direct superinterfaces of this class: %d" % interfaces_count
 
-    counted_interfaces = 0
-    while counted_interfaces < interfaces_count:
-        struct.unpack('>H', classfile.read(2))[0]
-        counted_interfaces += 1
+counted_interfaces = 0
+while counted_interfaces < interfaces_count:
+    GetBytes('>H')
+    counted_interfaces += 1
 
-    fields_count = struct.unpack('>H', classfile.read(2))[0]
-    print "There are %d fields." % fields_count
+fields_count = GetBytes('>H')
+print "There are %d fields." % fields_count
 
-    counted_fields = 0
-    while counted_fields < fields_count:
-        access_flags = struct.unpack('>H', classfile.read(2))[0]
-        name_index = struct.unpack('>H', classfile.read(2))[0]
-        descriptor_index = struct.unpack('>H', classfile.read(2))[0]
-        attributes_count = struct.unpack('>H', classfile.read(2))[0]
-        
-        counted_attributes = 0
-        while counted_attributes < attributes_count:
-            attribute_name_index = struct.unpack('>H', classfile.read(2))[0]
-            attribute_length = struct.unpack('>I', classfile.read(4))[0] # bytes
+counted_fields = 0
+while counted_fields < fields_count:
+    access_flags = GetBytes('>H')
+    name_index = GetBytes('>H')
+    descriptor_index = GetBytes('>H')
+    attributes_count = GetBytes('>H')
+    
+    counted_attributes = 0
+    while counted_attributes < attributes_count:
+        attribute_name_index = GetBytes('>H')
+        attribute_length = GetBytes('>I')
 
-            attribute_content = classfile.read(attribute_length)
+        attribute_content = classfile.read(attribute_length)
 
-            counted_attributes += 1
+        counted_attributes += 1
 
-        counted_fields += 1
+    counted_fields += 1
 
-    methods_count = struct.unpack('>H', classfile.read(2))[0]
-    print "There are %d methods." % methods_count
+methods_count = GetBytes('>H')
+print "There are %d methods." % methods_count
 
-    counted_methods = 0
-    while counted_methods < methods_count:
-        access_flags = struct.unpack('>H', classfile.read(2))[0]
-        name_index = struct.unpack('>H', classfile.read(2))[0]
-        descriptor_index = struct.unpack('>H', classfile.read(2))[0]
-        attributes_count = struct.unpack('>H', classfile.read(2))[0]
+counted_methods = 0
+while counted_methods < methods_count:
+    access_flags = GetBytes('>H')
+    name_index = GetBytes('>H')
+    descriptor_index = GetBytes('>H')
+    attributes_count = GetBytes('>H')
 
-        print "-- %s() has %d attributes." % (constant_pool[name_index][2], attributes_count)
-        
-        counted_attributes = 0
-        while counted_attributes < attributes_count:
-            attribute_name_index = struct.unpack('>H', classfile.read(2))[0]
-            attribute_length = struct.unpack('>I', classfile.read(4))[0] # bytes
-            print "----" + constant_pool[attribute_name_index][2] + " (%d bytes)" %  attribute_length
+    print "-- %s() has %d attributes." % (Utf8Dereference(name_index), attributes_count)
+    
+    counted_attributes = 0
+    while counted_attributes < attributes_count:
+        attribute_name_index = GetBytes('>H')
+        attribute_length = GetBytes('>I')
+        print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
 
-            attribute_content = classfile.read(attribute_length)
-            disassemble(attribute_content)
+        attribute_content = classfile.read(attribute_length)
+        #disassemble(attribute_content)
 
-            counted_attributes += 1
+        counted_attributes += 1
 
-        counted_methods += 1
+    counted_methods += 1
