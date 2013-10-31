@@ -3,6 +3,7 @@
 import csv    # loading reference file
 import pprint # debugging
 import struct # unpacking binary data
+import binascii
 
 # Load opcodes
 
@@ -12,23 +13,38 @@ csvfile = open('opcodes.csv', 'r')
 
 with csvfile:
     opcoderef = csv.reader(csvfile, delimiter=',', quotechar='"')
-    opcoderef.next() # skip copyright notice
     opcoderef.next() # skip header
     for row in opcoderef:
         (mnemonic, opcode, arguments, stack, description) = row
 
+        opcode = opcode.zfill(2) # I want leading zeros
+
         if opcode not in opcodes:
             opcodes[opcode] = { "name" : mnemonic, "arguments" : arguments.split(','), "stack" : stack, "description" : description }
 
+for opcode in opcodes:
+    print opcode
+
 def disassemble(bytecode):
     index = 0
-    while index < len(bytecode):
-        opcode = bytecode[index]
-        print "[0x%02x] %02x" % (index, ord(opcode))
+
+    while index < len(bytecode) - 1:
+        opcode = binascii.hexlify(bytecode[index])
+        name = opcodes[opcode]['name']
+        arguments = len(opcodes[opcode]['arguments'])
+
+        if arguments == 0:
+            print "[0x%02x] %s %s" % (index, opcode, name)
+        else:
+            argument_bytes = []
+            for i in range(0, arguments):
+                index += 1
+                argument_bytes.append(binascii.hexlify(bytecode[index]))
+            print "[0x%02x] %s %s | %s %s" % (index, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
+
         index += 1
 
 # Load file
-
 constant_pool_tag = {
     1 : "CONSTANT_Utf8",
     3 : "CONSTANT_Integer",
@@ -172,9 +188,39 @@ while counted_methods < methods_count:
         attribute_name_index = GetBytes('>H')
         attribute_length = GetBytes('>I')
         print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
+        
+        if Utf8Dereference(attribute_name_index) == "Code":
+            max_stack = GetBytes(">H")
+            max_locals = GetBytes(">H")
+            code_length = GetBytes(">I")
 
-        attribute_content = classfile.read(attribute_length)
-        #disassemble(attribute_content)
+            print "Max stack: %d\nMax locals: %d" % (max_stack, max_locals)
+            print "Code length: %d" % code_length
+
+            code_content = classfile.read(code_length)
+            disassemble(code_content)
+
+            exception_table_length = GetBytes(">H")
+
+            print "Method has %d exceptions" % exception_table_length
+
+            for i in range(0, exception_table_length):
+                start_pc = GetBytes(">H")
+                end_pc = GetBytes(">H")
+                handler_pc = GetBytes(">H")
+                catch_type = GetBytes(">H")
+
+            attributes_count = GetBytes(">H")
+
+            print "Method has %d attributes" % attributes_count
+
+            for i in range(0, attributes_count):
+                attribute_name_index = GetBytes(">H")
+                attribute_length = GetBytes(">I")
+                attributes = classfile.read(attribute_length)
+
+        else:
+            attribute_content = classfile.read(attribute_length)
 
         counted_attributes += 1
 

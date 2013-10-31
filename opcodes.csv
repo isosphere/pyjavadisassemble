@@ -1,4 +1,3 @@
-# The contents of this file are directly taken from http://en.wikipedia.org/wiki/Java_bytecode_instruction_listings, available under a creative commons license
 # Mnemonic, Opcode (in hex), Other bytes, Stack [before] -> [after], Description
 aaload,32,,"arrayref, index ? value",load onto the stack a reference from an array
 aastore,53,,"arrayref, index, value ?",store into a reference in an array
@@ -15,7 +14,7 @@ astore,3a,1: index,objectref ?,store a reference into a local variable #index
 astore_0,4b,,objectref ?,store a reference into local variable 0
 astore_1,4c,,objectref ?,store a reference into local variable 1
 astore_2,4d,,objectref ?,store a reference into local variable 2
-astore_3,4,,objectref ?,store a reference into local variable 3
+astore_3,4e,,objectref ?,store a reference into local variable 3
 athrow,bf,,"objectref ? [empty], objectref","throws an error or exception (notice that the rest of the stack is cleared, leaving only a reference to the Throwable)"
 baload,33,,"arrayref, index ? value",load a byte or Boolean value from an array
 bastore,54,,"arrayref, index, value ?",store a byte or Boolean value into an array
@@ -25,14 +24,14 @@ caload,34,,"arrayref, index ? value",load a char from an array
 castore,55,,"arrayref, index, value ?",store a char into an array
 checkcast,c0,"2: indexbyte1, indexbyte2",objectref ? objectref,"checks whether an objectref is of a certain type, the class reference of which is in the constant pool at index (indexbyte1 << 8 + indexbyte2)"
 d2f,90,,value ? result,convert a double to a float
-d2i,8,,value ? result,convert a double to an int
+d2i,8e,,value ? result,convert a double to an int
 d2l,8f,,value ? result,convert a double to a long
 dadd,63,,"value1, value2 ? result",add two doubles
 daload,31,,"arrayref, index ? value",load a double from an array
 dastore,52,,"arrayref, index, value ?",store a double into an array
 dcmpg,98,,"value1, value2 ? result",compare two doubles
 dcmpl,97,,"value1, value2 ? result",compare two doubles
-dconst_0,0,,? 0.0,push the constant 0.0 onto the stack
+dconst_0,0e,,? 0.0,push the constant 0.0 onto the stack
 dconst_1,0f,,? 1.0,push the constant 1.0 onto the stack
 ddiv,6f,,"value1, value2 ? result",divide two doubles
 dload,18,1: index,? value,load a double value from a local variable #index
@@ -55,7 +54,7 @@ dup_x1,5a,,"value2, value1 ? value1, value2, value1",insert a copy of the top va
 dup_x2,5b,,"value3, value2, value1 ? value1, value3, value2, value1","insert a copy of the top value into the stack two (if value2 is double or long it takes up the entry of value3, too) or three values (if value2 is neither double nor long) from the top"
 dup2,5c,,"{value2, value1} ? {value2, value1}, {value2, value1}","duplicate top two stack words (two values, if value1 is not double nor long; a single value, if value1 is double or long)"
 dup2_x1,5d,,"value3, {value2, value1} ? {value2, value1}, value3, {value2, value1}",duplicate two words and insert beneath third word (see explanation above)
-dup2_x2,5,,"{value4, value3}, {value2, value1} ? {value2, value1}, {value4, value3}, {value2, value1}",duplicate two words and insert beneath fourth word
+dup2_x2,5e,,"{value4, value3}, {value2, value1} ? {value2, value1}, {value4, value3}, {value2, value1}",duplicate two words and insert beneath fourth word
 f2d,8d,,value ? result,convert a float to a double
 f2i,8b,,value ? result,convert a float to an int
 f2l,8c,,value ? result,convert a float to a long
@@ -67,7 +66,7 @@ fcmpl,95,,"value1, value2 ? result",compare two floats
 fconst_0,0b,,? 0.0f,push 0.0f on the stack
 fconst_1,0c,,? 1.0f,push 1.0f on the stack
 fconst_2,0d,,? 2.0f,push 2.0f on the stack
-fdiv,6,,"value1, value2 ? result",divide two floats
+fdiv,6e,,"value1, value2 ? result",divide two floats
 fload,17,1: index,? value,load a float value from a local variable #index
 fload_0,22,,? value,load a float value from local variable 0
 fload_1,23,,? value,load a float value from local variable 1
@@ -94,8 +93,8 @@ i2f,86,,value ? result,convert an int into a float
 i2l,85,,value ? result,convert an int into a long
 i2s,93,,value ? result,convert an int into a short
 iadd,60,,"value1, value2 ? result",add two ints
-iaload,2,,"arrayref, index ? value",load an int from an array
-iand,7,,"value1, value2 ? result",perform a bitwise and on two integers
+iaload,2e,,"arrayref, index ? value",load an int from an array
+iand,7e,,"value1, value2 ? result",perform a bitwise and on two integers
 iastore,4f,,"arrayref, index, value ?",store an int into an array
 iconst_m1,2,,? -1,load the int value -1 onto the stack
 iconst_0,3,,? 0,load the int value 0 onto the stack
@@ -116,7 +115,7 @@ if_icmpne,a0,"2: branchbyte1, branchbyte2","value1, value2 ?","if ints are not e
 ifeq,99,"2: branchbyte1, branchbyte2",value ?,"if value is 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
 ifge,9c,"2: branchbyte1, branchbyte2",value ?,"if value is greater than or equal to 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
 ifgt,9d,"2: branchbyte1, branchbyte2",value ?,"if value is greater than 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
-ifle,9,"2: branchbyte1, branchbyte2",value ?,"if value is less than or equal to 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
+ifle,9e,"2: branchbyte1, branchbyte2",value ?,"if value is less than or equal to 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
 iflt,9b,"2: branchbyte1, branchbyte2",value ?,"if value is less than 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
 ifne,9a,"2: branchbyte1, branchbyte2",value ?,"if value is not 0, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
 ifnonnull,c7,"2: branchbyte1, branchbyte2",value ?,"if value is not null, branch to instruction at branchoffset (signed short constructed from unsigned bytes branchbyte1 << 8 + branchbyte2)"
@@ -146,7 +145,7 @@ istore,36,1: index,value ?,store int value into variable #index
 istore_0,3b,,value ?,store int value into variable 0
 istore_1,3c,,value ?,store int value into variable 1
 istore_2,3d,,value ?,store int value into variable 2
-istore_3,3,,value ?,store int value into variable 3
+istore_3,3e,,value ?,store int value into variable 3
 isub,64,,"value1, value2 ? result",int subtract
 iushr,7c,,"value1, value2 ? result",int logical shift right
 ixor,82,,"value1, value2 ? result",int xor
@@ -167,7 +166,7 @@ ldc_w,13,"2: indexbyte1, indexbyte2",? value,"push a constant #index from a cons
 ldc2_w,14,"2: indexbyte1, indexbyte2",? value,push a constant #index from a constant pool (double or long) onto the stack (wide index is constructed as indexbyte1 << 8 + indexbyte2)
 ldiv,6d,,"value1, value2 ? result",divide two longs
 lload,16,1: index,? value,load a long value from a local variable #index
-lload_0,1,,? value,load a long value from a local variable 0
+lload_0,1e,,? value,load a long value from a local variable 0
 lload_1,1f,,? value,load a long value from a local variable 1
 lload_2,20,,? value,load a long value from a local variable 2
 lload_3,21,,? value,load a long value from a local variable 3
