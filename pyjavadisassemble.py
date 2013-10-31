@@ -4,6 +4,7 @@ import csv    # loading reference file
 import pprint # debugging
 import struct # unpacking binary data
 import binascii
+import prettytable
 
 # Load opcodes
 
@@ -22,28 +23,35 @@ with csvfile:
         if opcode not in opcodes:
             opcodes[opcode] = { "name" : mnemonic, "arguments" : arguments.split(','), "stack" : stack, "description" : description }
 
-for opcode in opcodes:
-    print opcode
-
 def disassemble(bytecode, address):
     index = 0
 
+    table = prettytable.PrettyTable(["Address", "Opcode", "Arguments", "Instruction", "Description"])
     while index < len(bytecode) - 1:
         opcode = binascii.hexlify(bytecode[index])
         name = opcodes[opcode]['name']
+
         arguments = len(opcodes[opcode]['arguments'])
+        if opcodes[opcode]['arguments'] == [""]:
+            arguments = 0
+
+        description = opcodes[opcode]['description']
         opcode_location = address + index
 
         if arguments == 0:
-            print "[0x%02x] %s %s" % (opcode_location, opcode, name)
+            #print "[0x%04x] %s %s" % (opcode_location, opcode, name)
+            table.add_row(["[0x%04x]" % opcode_location, opcode, "", name, description])
         else:
             argument_bytes = []
             for i in range(0, arguments):
                 index += 1
                 argument_bytes.append(binascii.hexlify(bytecode[index]))
-            print "[0x%02x] %s %s | %s %s" % (opcode_location, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
+            #print "[0x%04x] %s %s | %s %s" % (opcode_location, opcode, " ".join(argument_bytes), name, " ".join(argument_bytes))
+            table.add_row(["[0x%04x]" % opcode_location, opcode, " ".join(argument_bytes), name, description])
 
         index += 1
+
+    print table
 
 # Load file
 constant_pool_tag = {
