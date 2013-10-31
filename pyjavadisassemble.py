@@ -25,14 +25,14 @@ with csvfile:
 for opcode in opcodes:
     print opcode
 
-def disassemble(bytecode):
+def disassemble(bytecode, address):
     index = 0
 
     while index < len(bytecode) - 1:
         opcode = binascii.hexlify(bytecode[index])
         name = opcodes[opcode]['name']
         arguments = len(opcodes[opcode]['arguments'])
-        opcode_location = index
+        opcode_location = address + index
 
         if arguments == 0:
             print "[0x%02x] %s %s" % (opcode_location, opcode, name)
@@ -198,8 +198,9 @@ while counted_methods < methods_count:
             print "Max stack: %d\nMax locals: %d" % (max_stack, max_locals)
             print "Code length: %d" % code_length
 
+            code_location = classfile.tell()
             code_content = classfile.read(code_length)
-            disassemble(code_content)
+            disassemble(code_content, code_location)
 
             exception_table_length = GetBytes(">H")
 
