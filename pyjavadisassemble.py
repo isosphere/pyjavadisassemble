@@ -1,15 +1,27 @@
 #!/usr/bin/env python
 
-import csv    # loading reference file
-import pprint # debugging
-import struct # unpacking binary data
-import binascii
-import prettytable
-import argparse
+# This application takes a given .class JAVA file and outputs all of the 
+# metadata associated with it and - most importantly - the instructions
+# that make up all of the methods in the class. 
+
+# This was created by Matthew Scheffel <matt@weeoak.com> and is released
+# under the GNU General Public License version 2.0
+
+import csv         # loading reference file
+import pprint      # debugging
+import struct      # unpacking binary data
+import binascii    # converting 0x30 to "30"
+import prettytable # nice output for code disassembly
+import argparse    # interpret command line arguments
 
 parser = argparse.ArgumentParser(description='Disassemble a class file')
 parser.add_argument('--class', help='class file to disassemble', dest="classfile", required=True)
+parser.add_argument('--debug', help='enable verbose debugging information (True or False)', dest="debug", default=False)
 args = parser.parse_args()
+
+if args.debug != False and args.debug != True:
+    print "Argument to --debug is invalid, assuming False."
+    args.debug = False
 
 # Load opcodes
 opcodes = {} # '0a' => { "name" => 'string', arguments => ["1: rawr", "2: blah"], stack => 'string', description => 'string' } 
@@ -55,7 +67,7 @@ def disassemble(bytecode, address):
 
     print table
 
-# Load file
+# Not using these two dictionaries yet!
 constant_pool_tag = {
     1 : "CONSTANT_Utf8",
     3 : "CONSTANT_Integer",
@@ -90,7 +102,7 @@ tag_structure = {
     "CONSTANT_InvokeDynamic" :  ('>H', '>H'),
 }
 
-constant_pool = []
+constant_pool = [] 
 
 def Utf8Dereference(index):
     # Not a string, but a reference to one
