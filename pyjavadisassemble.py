@@ -115,6 +115,47 @@ def Utf8Dereference(index):
 def GetBytes(data_format):
     return struct.unpack(data_format, classfile.read(struct.calcsize(data_format)))[0]
 
+# Attributes are used in ClassFile, field_info, method_info, and Code_attribute
+# structures.
+def ProcessAttributes(count):
+    counted_attributes = 0
+    while counted_attributes < count:
+        attribute_name_index = GetBytes('>H')
+        attribute_length = GetBytes('>I')
+        print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
+        
+        if Utf8Dereference(attribute_name_index) == "Code":
+            max_stack = GetBytes(">H")
+            max_locals = GetBytes(">H")
+            code_length = GetBytes(">I")
+
+            print "Max stack: %d\nMax locals: %d" % (max_stack, max_locals)
+            print "Code length: %d" % code_length
+
+            code_location = classfile.tell()
+            code_content = classfile.read(code_length)
+            disassemble(code_content, code_location)
+
+            exception_table_length = GetBytes(">H")
+
+            print"%s()'s code has %d exceptions" % (Utf8Dereference(name_index), exception_table_length)
+
+            for i in range(0, exception_table_length):
+                start_pc = GetBytes(">H")
+                end_pc = GetBytes(">H")
+                handler_pc = GetBytes(">H")
+                catch_type = GetBytes(">H")
+
+            attributes_count = GetBytes(">H")
+
+            print "%s()'s code has %d attributes" % (Utf8Dereference(name_index), attributes_count)
+            ProcessAttributes(attributes_count)
+
+        else:
+            attribute_content = classfile.read(attribute_length)
+
+        counted_attributes += 1
+
 try:
     classfile = open(args.classfile, 'rb')
 except IOError as e:
@@ -131,7 +172,7 @@ else:
 
     # The number of entries in the constant_pool plus one
     constant_pool_count = GetBytes('>H')
-
+    
     print "Version: %d.%d" % (major_version, minor_version)
     print "We have %d entries to extract from the constant_pool table (minus one)" % constant_pool_count
 
@@ -186,14 +227,7 @@ else:
         attributes_count = GetBytes('>H')
 
         print " #%d: %s (%d attributes)" % (counted_fields+1, name_string, attributes_count)
-        counted_attributes = 0
-        while counted_attributes < attributes_count:
-            attribute_name_index = GetBytes('>H')
-            attribute_length = GetBytes('>I')
-
-            attribute_content = classfile.read(attribute_length)
-
-            counted_attributes += 1
+        ProcessAttributes(attributes_count)
 
         counted_fields += 1
 
@@ -208,47 +242,8 @@ else:
         attributes_count = GetBytes('>H')
 
         print "-- %s() has %d attributes." % (Utf8Dereference(name_index), attributes_count)
-        
-        counted_attributes = 0
-        while counted_attributes < attributes_count:
-            attribute_name_index = GetBytes('>H')
-            attribute_length = GetBytes('>I')
-            print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
-            
-            if Utf8Dereference(attribute_name_index) == "Code":
-                max_stack = GetBytes(">H")
-                max_locals = GetBytes(">H")
-                code_length = GetBytes(">I")
-
-                print "Max stack: %d\nMax locals: %d" % (max_stack, max_locals)
-                print "Code length: %d" % code_length
-
-                code_location = classfile.tell()
-                code_content = classfile.read(code_length)
-                disassemble(code_content, code_location)
-
-                exception_table_length = GetBytes(">H")
-
-                print "Method has %d exceptions" % exception_table_length
-
-                for i in range(0, exception_table_length):
-                    start_pc = GetBytes(">H")
-                    end_pc = GetBytes(">H")
-                    handler_pc = GetBytes(">H")
-                    catch_type = GetBytes(">H")
-
-                attributes_count = GetBytes(">H")
-
-                print "Method has %d attributes" % attributes_count
-
-                for i in range(0, attributes_count):
-                    attribute_name_index = GetBytes(">H")
-                    attribute_length = GetBytes(">I")
-                    attributes = classfile.read(attribute_length)
-
-            else:
-                attribute_content = classfile.read(attribute_length)
-
-            counted_attributes += 1
+    
+        ProcessAttributes(attributes_count)
 
         counted_methods += 1
+        print "Last character in file is at: %s" % hex(classfile.tell())
