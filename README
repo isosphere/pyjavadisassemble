@@ -4,3 +4,5 @@ corresponding to the methods that make up the .class file.
 
 This is not a "decompiler" that generates Java source code. Those exist
 and are pretty buggy. I wanted something more reliable.
+
+Uses prettytable for rendering. 

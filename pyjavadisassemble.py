@@ -174,7 +174,7 @@ else:
     constant_pool_count = GetBytes('>H')
     
     print "Version: %d.%d" % (major_version, minor_version)
-    print "We have %d entries to extract from the constant_pool table (minus one)" % constant_pool_count
+    print "We have %d entries to extract from the constant_pool table" % (constant_pool_count - 1)
 
     pool_entries_processed = 0
 
@@ -199,6 +199,8 @@ else:
         constant_pool.append(entry)
         pool_entries_processed += 1
 
+    print "%d entries extracted from the constant_pool table." % pool_entries_processed
+
     class_access_flags = GetBytes('>H')
     print "Access flags: %04X" % class_access_flags
 
@@ -207,7 +209,7 @@ else:
     print "This class is '%s' (%s)" % (Utf8Dereference(this_class), Utf8Dereference(super_class))
 
     interfaces_count = GetBytes('>H')
-    print "Direct superinterfaces of this class:" 
+    print "%d direct superinterfaces of this class." % interfaces_count 
 
     counted_interfaces = 0
     while counted_interfaces < interfaces_count:
@@ -216,7 +218,7 @@ else:
         counted_interfaces += 1
 
     fields_count = GetBytes('>H')
-    print "Class fields:" 
+    print "%d class fields." % fields_count 
 
     counted_fields = 0
     while counted_fields < fields_count:
@@ -246,4 +248,9 @@ else:
         ProcessAttributes(attributes_count)
 
         counted_methods += 1
-        print "Last character in file is at: %s" % hex(classfile.tell())
+        print "Last byte processed is at: %s" % hex(classfile.tell())
+
+    print "%d methods processed." % counted_methods
+
+classfile.seek(0, 2)
+print "True EOF of file is at: %s" % hex(classfile.tell())
