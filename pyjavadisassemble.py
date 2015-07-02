@@ -252,5 +252,16 @@ else:
 
     print "%d methods processed." % counted_methods
 
+    attributes_count = GetBytes('>H')
+    print "There are %d attributes." % attributes_count
+
+    counted_attributes = 0
+    while counted_attributes < attributes_count:
+        ProcessAttributes(attributes_count)
+        counted_attributes += 1
+    
+    print "%d attributes processed." % counted_attributes
+    print "Last byte processed is at: %s" % hex(classfile.tell())
+
 classfile.seek(0, 2)
 print "True EOF of file is at: %s" % hex(classfile.tell())
