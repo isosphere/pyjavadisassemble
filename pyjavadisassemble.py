@@ -72,7 +72,7 @@ constant_pool_tag = {
     1 : "CONSTANT_Utf8",
     3 : "CONSTANT_Integer",
     4 : "CONSTANT_Float",
-    5 : "CONSTNAT_Long",
+    5 : "CONSTANT_Long",
     6 : "CONSTANT_Double",
     7 : "CONSTANT_Class",
     8 : "CONSTANT_String",
@@ -93,7 +93,7 @@ tag_structure = {
     "CONSTANT_String" : ('>H',),
     "CONSTANT_Integer" : ('>I',),
     "CONSTANT_Float" : ('>f',), 
-    "CONSTNAT_Long" : ('>I', '>I'), # 8 bytes
+    "CONSTANT_Long" : ('>I', '>I'), # 8 bytes
     "CONSTANT_Double" : ('>I','>I'), # 8 bytes
     "CONSTANT_NameAndType" : ('>H', '>H'),
     "CONSTANT_Utf8" : ('>H', 's'),
@@ -108,20 +108,25 @@ def Utf8Dereference(index):
     # Not a string, but a reference to one
     if len(constant_pool[index]) < 3:
         return constant_pool[constant_pool[index][1]][2]
+
     # A direct string
     else:
         return constant_pool[index][2]
 
 def GetBytes(data_format):
-    return struct.unpack(data_format, classfile.read(struct.calcsize(data_format)))[0]
+    size_of_format = struct.calcsize(data_format)
+    packed_content = classfile.read(size_of_format)
+    return struct.unpack(data_format, packed_content)[0]
 
 # Attributes are used in ClassFile, field_info, method_info, and Code_attribute
 # structures.
 def ProcessAttributes(count):
     counted_attributes = 0
     while counted_attributes < count:
-        attribute_name_index = GetBytes('>H')
-        attribute_length = GetBytes('>I')
+        print "counted: %d, total_count: %d" % (counted_attributes, count)
+        print "current position in file: 0x%x" % classfile.tell()
+        attribute_name_index = GetBytes(">H")
+        attribute_length = GetBytes(">I")
         print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
         
         if Utf8Dereference(attribute_name_index) == "Code":
@@ -161,6 +166,12 @@ try:
 except IOError as e:
     print "Failed to open class file: %s" % e
 else:
+    classfile.seek(0, 2)
+    final_position = classfile.tell()
+    classfile.seek(0)
+
+    print "The final position in the class file is at 0x%x" % final_position
+
     magic = classfile.read(4)
     if magic != chr(0xCA) + chr(0xFE) + chr(0xBA) + chr(0xBE):
         print "This is not a class file. Exiting."
@@ -188,10 +199,14 @@ else:
             length = GetBytes('>H')
             string = classfile.read(length)
 
-            entry.append(length)
+            entry.append(length) # don't really need to store the length...
             entry.append(string)
 
         else:
+            if tag not in constant_pool_tag:
+                print "Constant pool error - tag '%x' is not known" % tag
+                exit(1)
+
             for packet in tag_structure[constant_pool_tag[tag]]:
                 data = GetBytes(packet)
                 entry.append(data)
@@ -203,6 +218,7 @@ else:
 
     class_access_flags = GetBytes('>H')
     print "Access flags: %04X" % class_access_flags
+    print "%x" % class_access_flags
 
     this_class = GetBytes('>H')
     super_class = GetBytes('>H')
@@ -243,12 +259,13 @@ else:
         descriptor_index = GetBytes('>H')
         attributes_count = GetBytes('>H')
 
-        print "-- %s() has %d attributes." % (Utf8Dereference(name_index), attributes_count)
+        if attributes_count > 0:
+            print "-- %s() has %d attributes." % (Utf8Dereference(name_index), attributes_count)
     
         ProcessAttributes(attributes_count)
 
         counted_methods += 1
-        print "Last byte processed is at: %s" % hex(classfile.tell())
+        #print "Last byte processed is at: %s" % hex(classfile.tell())
 
     print "%d methods processed." % counted_methods
 
@@ -260,8 +277,6 @@ else:
         ProcessAttributes(attributes_count)
         counted_attributes += 1
     
-    print "%d attributes processed." % counted_attributes
+    #print "%d attributes processed." % counted_attributes
     print "Last byte processed is at: %s" % hex(classfile.tell())
 
-classfile.seek(0, 2)
-print "True EOF of file is at: %s" % hex(classfile.tell())

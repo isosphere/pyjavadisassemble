@@ -1,4 +1,6 @@
 *.class
+*.jar
+*.java
 
 #################
 ## Eclipse
