@@ -86,9 +86,9 @@ constant_pool_tag = {
 }
 
 tag_structure = {
-    "CONSTANT_Class" : ('>H',),
-    "CONSTANT_Fieldref" :  ('>H', '>H'),
-    "CONSTANT_Methodref" : ('>H', '>H'),
+    "CONSTANT_Class" : ('>H',),                     # reference to name_index
+    "CONSTANT_Fieldref" :  ('>H', '>H'),            # class index, name and type index
+    "CONSTANT_Methodref" : ('>H', '>H'),            
     "CONSTANT_InterfaceMethodref" : ('>H', '>H'),
     "CONSTANT_String" : ('>H',),
     "CONSTANT_Integer" : ('>I',),
@@ -96,7 +96,7 @@ tag_structure = {
     "CONSTANT_Long" : ('>I', '>I'), # 8 bytes
     "CONSTANT_Double" : ('>I','>I'), # 8 bytes
     "CONSTANT_NameAndType" : ('>H', '>H'),
-    "CONSTANT_Utf8" : ('>H', 's'),
+    "CONSTANT_Utf8" : ('>H', 's'),                  # length, length bytes
     "CONSTANT_MethodHandle" : ('B', '>H'),
     "CONSTANT_MethodType" : ('>H',),
     "CONSTANT_InvokeDynamic" :  ('>H', '>H'),
@@ -116,6 +116,7 @@ def Utf8Dereference(index):
 def GetBytes(data_format):
     size_of_format = struct.calcsize(data_format)
     packed_content = classfile.read(size_of_format)
+    #print "GetBytes - File now at 0x%x" % classfile.tell()
     return struct.unpack(data_format, packed_content)[0]
 
 # Attributes are used in ClassFile, field_info, method_info, and Code_attribute
@@ -166,9 +167,9 @@ try:
 except IOError as e:
     print "Failed to open class file: %s" % e
 else:
-    classfile.seek(0, 2)
-    final_position = classfile.tell()
-    classfile.seek(0)
+    classfile.seek(0, 2)                # seek to end of file
+    final_position = classfile.tell()   # report where that is
+    classfile.seek(0)                   # return to the start
 
     print "The final position in the class file is at 0x%x" % final_position
 
@@ -176,28 +177,32 @@ else:
     if magic != chr(0xCA) + chr(0xFE) + chr(0xBA) + chr(0xBE):
         print "This is not a class file. Exiting."
         exit()
-
     print "This is a class file."
+
     minor_version = GetBytes('>H')
     major_version = GetBytes('>H')
 
     # The number of entries in the constant_pool plus one
     constant_pool_count = GetBytes('>H')
+    constant_pool_count -= 2
     
     print "Version: %d.%d" % (major_version, minor_version)
-    print "We have %d entries to extract from the constant_pool table" % (constant_pool_count - 1)
+    print "We have %d entries to extract from the constant_pool table" % (constant_pool_count)
 
     pool_entries_processed = 0
 
+    # The constant pool table is indexed from 1 to constant_pool_count - 1
+    # Python arrays are indexed from 0 to N
     constant_pool.append("Unused entry to harmonize our index with Java class index convention.")
 
-    while pool_entries_processed < constant_pool_count - 1:
+    while pool_entries_processed < constant_pool_count:
         tag = GetBytes('B')
         entry = [tag]
 
+
         if tag == 1: # Utf8, contains variable-length strings
             length = GetBytes('>H')
-            string = classfile.read(length)
+            string = classfile.read(length) # FIXME: the string is encoded in a modified UTF8
 
             entry.append(length) # don't really need to store the length...
             entry.append(string)
@@ -218,7 +223,6 @@ else:
 
     class_access_flags = GetBytes('>H')
     print "Access flags: %04X" % class_access_flags
-    print "%x" % class_access_flags
 
     this_class = GetBytes('>H')
     super_class = GetBytes('>H')
