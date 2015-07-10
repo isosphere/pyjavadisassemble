@@ -184,12 +184,12 @@ else:
 
     # The number of entries in the constant_pool plus one
     constant_pool_count = GetBytes('>H')
-    constant_pool_count -= 2
+    constant_pool_count -= 1
     
     print "Version: %d.%d" % (major_version, minor_version)
     print "We have %d entries to extract from the constant_pool table" % (constant_pool_count)
 
-    pool_entries_processed = 0
+    pool_entries_processed = 1
 
     # The constant pool table is indexed from 1 to constant_pool_count - 1
     # Python arrays are indexed from 0 to N
