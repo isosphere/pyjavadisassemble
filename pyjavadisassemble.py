@@ -102,7 +102,38 @@ tag_structure = {
     "CONSTANT_InvokeDynamic" :  ('>H', '>H'),
 }
 
-constant_pool = [] 
+def ProcessConstantPoolTable(number_of_items):
+    constant_pool = []
+    pool_entries_processed = 1
+
+    # The constant pool table is indexed from 1 to constant_pool_count - 1
+    # Python arrays are indexed from 0 to N
+    constant_pool.append("Unused entry to harmonize our index with Java class index convention.")
+
+    while pool_entries_processed < constant_pool_count:
+        tag = GetBytes('B')
+        entry = [tag]
+
+        if tag == 1: # Utf8, contains variable-length strings
+            length = GetBytes('>H')
+            string = classfile.read(length) # FIXME: the string is encoded in a modified UTF8
+
+            entry.append(length) # don't really need to store the length...
+            entry.append(string)
+
+        else:
+            if tag not in constant_pool_tag:
+                print "Constant pool error - tag '%x' is not known" % tag
+                exit(1)
+
+            for packet in tag_structure[constant_pool_tag[tag]]:
+                data = GetBytes(packet)
+                entry.append(data)
+
+        constant_pool.append(entry)
+        pool_entries_processed += 1
+
+    return constant_pool
 
 def Utf8Dereference(index):
     # Not a string, but a reference to one
@@ -116,7 +147,7 @@ def Utf8Dereference(index):
 def GetBytes(data_format):
     size_of_format = struct.calcsize(data_format)
     packed_content = classfile.read(size_of_format)
-    #print "GetBytes - File now at 0x%x" % classfile.tell()
+    # print "GetBytes - File now at 0x%x" % classfile.tell()
     return struct.unpack(data_format, packed_content)[0]
 
 # Attributes are used in ClassFile, field_info, method_info, and Code_attribute
@@ -189,44 +220,25 @@ else:
     print "Version: %d.%d" % (major_version, minor_version)
     print "We have %d entries to extract from the constant_pool table" % (constant_pool_count)
 
-    pool_entries_processed = 1
+    constant_pool = ProcessConstantPoolTable(constant_pool_count)
 
-    # The constant pool table is indexed from 1 to constant_pool_count - 1
-    # Python arrays are indexed from 0 to N
-    constant_pool.append("Unused entry to harmonize our index with Java class index convention.")
-
-    while pool_entries_processed < constant_pool_count:
-        tag = GetBytes('B')
-        entry = [tag]
-
-
-        if tag == 1: # Utf8, contains variable-length strings
-            length = GetBytes('>H')
-            string = classfile.read(length) # FIXME: the string is encoded in a modified UTF8
-
-            entry.append(length) # don't really need to store the length...
-            entry.append(string)
-
-        else:
-            if tag not in constant_pool_tag:
-                print "Constant pool error - tag '%x' is not known" % tag
-                exit(1)
-
-            for packet in tag_structure[constant_pool_tag[tag]]:
-                data = GetBytes(packet)
-                entry.append(data)
-
-        constant_pool.append(entry)
-        pool_entries_processed += 1
-
-    print "%d entries extracted from the constant_pool table." % pool_entries_processed
+    print "%d entries extracted from the constant_pool table." % len(constant_pool)
 
     class_access_flags = GetBytes('>H')
     print "Access flags: %04X" % class_access_flags
 
     this_class = GetBytes('>H')
     super_class = GetBytes('>H')
-    print "This class is '%s' (%s)" % (Utf8Dereference(this_class), Utf8Dereference(super_class))
+
+    print this_class
+    print super_class
+
+    print "This class is '%s'" % Utf8Dereference(this_class)
+    
+    if super_class > 0:
+        print "Superclass of '%s'" % Utf8Dereference(super_class)
+    else:
+        print "Superclass of 'Object'"
 
     interfaces_count = GetBytes('>H')
     print "%d direct superinterfaces of this class." % interfaces_count 
@@ -282,5 +294,5 @@ else:
         counted_attributes += 1
     
     #print "%d attributes processed." % counted_attributes
-    print "Last byte processed is at: %s" % hex(classfile.tell())
+    print "Last byte processed is at: %s - true EOF is at 0x%x" % (hex(classfile.tell()), final_position)
 
