@@ -26,6 +26,8 @@ if args.debug != False and args.debug != True:
 # Load opcodes
 opcodes = {} # '0a' => { "name" => 'string', arguments => ["1: rawr", "2: blah"], stack => 'string', description => 'string' } 
 
+constant_pool_count = 0
+
 csvfile = open('opcodes.csv', 'r')
 
 with csvfile:
@@ -104,9 +106,9 @@ tag_structure = {
 
 def ProcessConstantPoolTable(number_of_items):
     constant_pool = []
+    # The constant pool table is indexed from 1 to constant_pool_count - 1
     pool_entries_processed = 1
 
-    # The constant pool table is indexed from 1 to constant_pool_count - 1
     # Python arrays are indexed from 0 to N
     constant_pool.append("Unused entry to harmonize our index with Java class index convention.")
 
@@ -114,7 +116,7 @@ def ProcessConstantPoolTable(number_of_items):
         tag = GetBytes('B')
         entry = [tag]
 
-        if tag == 1: # Utf8, contains variable-length strings
+        if constant_pool_tag[tag] == 'CONSTANT_Utf8':
             length = GetBytes('>H')
             string = classfile.read(length) # FIXME: the string is encoded in a modified UTF8
 
@@ -127,6 +129,13 @@ def ProcessConstantPoolTable(number_of_items):
                 exit(1)
 
             for packet in tag_structure[constant_pool_tag[tag]]:
+                print constant_pool_tag[tag]
+
+                if constant_pool_tag[tag] == 'CONSTANT_Float':
+                    print "float"
+                    print tag
+                    print "0x%x" % classfile.tell()
+
                 data = GetBytes(packet)
                 entry.append(data)
 
@@ -136,13 +145,16 @@ def ProcessConstantPoolTable(number_of_items):
     return constant_pool
 
 def Utf8Dereference(index):
-    # Not a string, but a reference to one
-    if len(constant_pool[index]) < 3:
-        return constant_pool[constant_pool[index][1]][2]
+    if index > 0 and index < constant_pool_count:
+        # Not a string, but a reference to one
+        if len(constant_pool[index]) < 3:
+            return constant_pool[constant_pool[index][1]][2]
 
-    # A direct string
+        # A direct string
+        else:
+            return constant_pool[index][2]
     else:
-        return constant_pool[index][2]
+        print "The index 0x%x (%d) is not valid. The constant pool count is %d." % (index, index, constant_pool_count)
 
 def GetBytes(data_format):
     size_of_format = struct.calcsize(data_format)
@@ -155,8 +167,8 @@ def GetBytes(data_format):
 def ProcessAttributes(count):
     counted_attributes = 0
     while counted_attributes < count:
-        print "counted: %d, total_count: %d" % (counted_attributes, count)
-        print "current position in file: 0x%x" % classfile.tell()
+        #print "counted: %d, total_count: %d" % (counted_attributes, count)
+        #print "current position in file: 0x%x" % classfile.tell()
         attribute_name_index = GetBytes(">H")
         attribute_length = GetBytes(">I")
         print "----" + Utf8Dereference(attribute_name_index) + " (%d bytes)" %  attribute_length
@@ -218,20 +230,35 @@ else:
     constant_pool_count -= 1
     
     print "Version: %d.%d" % (major_version, minor_version)
-    print "We have %d entries to extract from the constant_pool table" % (constant_pool_count)
+    # The constant pool table is indexed from 1 to constant_pool_count - 1
+    print "We have %d entries to extract from the constant_pool table" % (constant_pool_count - 1)
 
     constant_pool = ProcessConstantPoolTable(constant_pool_count)
 
-    print "%d entries extracted from the constant_pool table." % len(constant_pool)
+    print "%d entries extracted from the constant_pool table." % (len(constant_pool)-1) # don't forget added "spacer"
+
+    access_flag_types = {
+        "ACC_PUBLIC"     : 0x0001,
+        "ACC_FINAL"      : 0x0010,
+        "ACC_SUPER"      : 0x0020,
+        "ACC_INTERFACE"  : 0x0200,
+        "ACC_ABSTRACT"   : 0x0400,
+        "ACC_SYNTHETIC"  : 0x1000,
+        "ACC_ANNOTATION" : 0x2000,
+        "ACC_ENUM"       : 0x4000
+    }
 
     class_access_flags = GetBytes('>H')
     print "Access flags: %04X" % class_access_flags
 
+    for flag in access_flag_types:
+        if access_flag_types[flag] & class_access_flags == access_flag_types[flag]:
+            print flag
+
     this_class = GetBytes('>H')
     super_class = GetBytes('>H')
 
-    print this_class
-    print super_class
+    print "this class = 0x%x\tsuper class = 0x%x" % (this_class, super_class)
 
     print "This class is '%s'" % Utf8Dereference(this_class)
     
